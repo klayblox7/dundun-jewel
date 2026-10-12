@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: dundun-jewel
+    runtime: static
+    buildCommand: test -f public/index.html
+    staticPublishPath: ./public
+    autoDeployTrigger: commit
