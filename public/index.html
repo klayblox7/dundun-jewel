@@ -248,7 +248,7 @@ async function switchCharacter(id, initial=false) {
   }
 }
 
-// The source FBX meshes have no skeleton. Build six gentle shape keys once,
+// The source FBX meshes have no skeleton. Build eight shape keys once,
 // then blend them on the GPU while the trio scene plays. The editor mesh is
 // never modified and the expensive vertex work never runs in a frame.
 function trioMorphSmooth(value, start, end) {
@@ -265,7 +265,7 @@ function createTrioDeformer(character, asset) {
   const geometry = asset.geometry.clone();
   const rest = asset.basePositions, count = rest.length / 3;
   const jump = character.motion.jump, jaw = character.motion.jaw;
-  const targets = Array.from({length: 6}, () => new Float32Array(rest.length));
+  const targets = Array.from({length: 8}, () => new Float32Array(rest.length));
   const eyeFaces = new Uint16Array(count), incident = new Uint16Array(count);
   const eyeBounds = [[Infinity, -Infinity], [Infinity, -Infinity]];
   const eyePart = PARTS.indexOf('eyes');
@@ -305,15 +305,25 @@ function createTrioDeformer(character, asset) {
       trioMorphSmooth(x, ...arm.front) * (1 - trioMorphSmooth(x, ...arm.rear)) *
       trioMorphSmooth(y, arm.height[0], arm.height[0] + .28) *
       (1 - trioMorphSmooth(y, arm.height[1] - .28, arm.height[1]));
-    targets[2][i] = side * .11 * armWeight;
-    targets[2][i + 1] = side * .075 * armWeight;
+    targets[2][i] = side * .075 * armWeight;
+    targets[2][i + 1] = side * .22 * armWeight;
 
     const tail = trioMorphSmooth(x, character.motion.tailRoot, character.motion.tailTip);
     if (tail) {
-      const angle = .105 * tail, c = Math.cos(angle), s = Math.sin(angle);
       const offset = x - character.motion.tailRoot;
-      targets[3][i] = offset * (c - 1) - z * s;
-      targets[3][i + 2] = offset * s + z * (c - 1);
+      for (const [target, direction] of [[3, 1], [6, -1]]) {
+        const angle = direction * .38 * tail, c = Math.cos(angle), s = Math.sin(angle);
+        targets[target][i] = offset * (c - 1) - z * s;
+        targets[target][i + 2] = offset * s + z * (c - 1);
+      }
+    }
+    const headWeight = trioMorphSmooth(y, character.motion.headY - .68, character.motion.headY - .12) *
+      (1 - trioMorphSmooth(x, -.15, .52));
+    if (headWeight) {
+      const angle = .16 * headWeight, c = Math.cos(angle), s = Math.sin(angle);
+      const fromNeck = x + .42;
+      targets[7][i] = fromNeck * (c - 1) - z * s;
+      targets[7][i + 2] = fromNeck * s + z * (c - 1);
     }
     const eye = eyeFaces[vertex] ? Math.min(1, 1.8 * eyeFaces[vertex] / Math.max(1, incident[vertex])) : 0;
     if (eye) targets[4][i + 1] = .82 * eye * (eyeCenters[side < 0 ? 0 : 1] - y);
@@ -341,8 +351,15 @@ function createTrioDeformer(character, asset) {
     const speed = Math.min(1, motion.speed || 0);
     influence[0] = Math.min(1, (motion.compression || 0) / .075 * .7 + (motion.flight || 0) * .8);
     influence[1] = Math.sin(t * 10.8 + motion.phase) * speed;
-    influence[2] = Math.sin(t * 6.3 + motion.phase) + Math.sin(t * 10.8 + motion.phase) * speed * .3;
-    influence[3] = Math.sin(t * 5.2 + motion.phase) * .75 + Math.sin(t * 9.4 + motion.phase) * .25;
+    influence[2] = Math.max(-1, Math.min(1,
+      Math.sin(t * (11.4 + motion.index * .6) + motion.phase) * .82 +
+      Math.sin(t * 18.2 + motion.phase * 1.4) * .18));
+    const wagPhase = t * (13.2 + motion.index * .7) + motion.phase + .23 * Math.sin(t * 3.1 + motion.phase);
+    const wag = Math.max(-1, Math.min(1, Math.sin(wagPhase) * .84 + Math.sin(wagPhase * 1.55) * .16));
+    influence[3] = Math.max(0, wag);
+    influence[6] = Math.max(0, -wag);
+    influence[7] = Math.sin(t * 4.5 + motion.phase * .85) * .76 +
+      Math.sin(t * 7.1 + motion.phase) * .19;
     influence[4] = Math.max(...[.76, 2.42, 4.32, 6.22, 8.27].map(at => trioMorphPulse(t, at + motion.index * .17, .14)));
     influence[5] = Math.max(...[1.02, 3.04, 5.08, 7.09, 8.57].map(at => trioMorphPulse(t, at + motion.index * .11, .43)));
   }
