@@ -1,8 +1,9 @@
 # DunDun Jewel on Render
 
 This repository contains the completed interactive jewelry page. The original
-FBX-derived surface, reference photo, company logo, materials, stone controls
-and animations are all embedded in public/index.html.
+    FBX-derived surface, reference photos, materials, stone controls and
+animations are packaged under public/. Large model and image assets are
+separate files so the initial HTML loads quickly and browsers can cache them.
 
 ## Render settings
 
@@ -22,8 +23,7 @@ Three.js and web fonts load from their existing external CDNs. Browsers need
 WebGL 2 or WebGPU. Material changes and stone placements are local to each
 visitor's browser; "保存设计设置" downloads a local JSON file.
 
-To update this package, rebuild index.html in the source project, run
-prepare-render.py, commit the updated public/index.html and push the linked
-branch. The application is the same single HTML file used in local preview.
+To update this package, run build-page.py and prepare-render.py in the source
+project, then publish the updated public/ directory.
 
 Official documentation: https://render.com/docs/static-sites
