@@ -1,7 +1,7 @@
 # DunDun Jewel on Render
 
-This repository contains the completed interactive jewelry page. The original
-FBX-derived surface, reference photos, materials, stone controls and
+This repository contains the completed interactive jewelry page. The
+FBX-derived models, reference photos, materials, stone controls and
 animations are packaged under public/. Large model and image assets are
 separate files so the initial HTML loads quickly and browsers can cache them.
 
